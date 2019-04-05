@@ -131,7 +131,7 @@ public class CyclicStructureTest extends MultiDriverTestClass {
         final MetaData metaData = session.metaData();
         final MappingContext mappingContext = new MappingContext(metaData);
 
-        EntityMapper mapper = new EntityGraphMapper(metaData, mappingContext);
+        EntityMapper mapper = new EntityGraphMapper(metaData, mappingContext, false);
         CompileContext context = mapper.map(object, depth);
         Compiler compiler = context.getCompiler();
         compiler.useStatementFactory(new RowStatementFactory());
