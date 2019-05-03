@@ -169,6 +169,7 @@
         <module>http-driver</module>
         <module>embedded-driver</module>
         <module>bolt-driver</module>
+        <module>bolt-driver-2</module>
         <module>neo4j-ogm-tests</module>
     </modules>
 
