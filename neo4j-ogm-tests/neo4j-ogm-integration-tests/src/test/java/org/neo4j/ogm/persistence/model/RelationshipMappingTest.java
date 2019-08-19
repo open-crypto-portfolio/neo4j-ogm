@@ -287,4 +287,55 @@ public class RelationshipMappingTest extends MultiDriverTestClass {
                 + "ORDER BY r.ordering", Collections.emptyMap());
         assertThat(entity1.getEntries()).extracting(MyRelationship::getOrdering).containsExactly(1, 2, 3);
     }
+
+    @Test // GH-657
+    public void deletesOfEntitiesWithTheSameButNotEqualParentShouldWork() {
+
+        Session tx = sessionFactory.openSession();
+        Map<String, Object> result = tx.query("CREATE (n1:MyNode {name: 'node1'})\n"
+            + "CREATE (n2:MyNode {name: 'node2'})\n"
+            + "CREATE (n3:MyNode {name: 'node3'})\n"
+            + "CREATE (n1) - [:REL_TWO] -> (n2)\n"
+            + "CREATE (n2) - [:REL_ONE] -> (n1)\n"
+            + "RETURN id(n1) as idOfn1, id(n2) as idOfn2, id(n3) as idOfn3", Collections.emptyMap()).iterator().next();
+
+        tx = sessionFactory.openSession();
+
+        MyNode node1 = tx.load(MyNode.class, (Long)result.get("idOfn1"));
+        MyNode node2 = tx.load(MyNode.class, (Long)result.get("idOfn2"));
+        MyNode node3 = tx.load(MyNode.class, (Long)result.get("idOfn3"));
+
+        assertThat(node1).isNotNull();
+        assertThat(node2).isNotNull();
+        assertThat(node3).isNotNull();
+
+        assertThat(node1.getRefOne()).isEqualTo(node2);
+        assertThat(node1.getRefTwo()).containsOnly(node2);
+        assertThat(node2.getRefTwo()).containsOnly(node1);
+
+        tx = sessionFactory.openSession();
+        MyNode changed = tx.load(MyNode.class, node1.getId());
+        changed.setName("Dirty thing.");
+        //changed.getRefTwo().get(0).setRefTwo(Collections.emptyList());
+        changed.setRefTwo(Collections.emptyList());
+        assertThat(changed.getRefOne()).isEqualTo(node2);
+        assertThat(changed.getRefTwo()).isNullOrEmpty();
+
+        System.out.println("----");
+        tx.save(changed);
+        System.out.println("---done");
+
+        // Again, verify in a new session.
+        tx = sessionFactory.openSession();
+        node1 = tx.load(MyNode.class, changed.getId());
+//        assertThat(node1.getRefOne()).isEqualTo(node2);
+        assertThat(node1.getRefTwo()).isNullOrEmpty();
+
+        // Better safe than sorry.
+        GraphTestUtils.assertSameGraph(getGraphDatabaseService(),
+            "CREATE (n1:MyNode {name: 'Dirty thing.'})\n"
+                + "CREATE (n2:MyNode {name: 'node2'})\n"
+                + "CREATE (n3:MyNode {name: 'node3'})\n"
+                + "CREATE (n2) - [:REL_ONE] -> (n1)");
+    }
 }
