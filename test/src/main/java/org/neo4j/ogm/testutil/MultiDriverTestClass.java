@@ -59,25 +59,26 @@ public class MultiDriverTestClass {
         if (configFileName == null) {
             configFileName = "ogm.properties";
         }
-        baseConfiguration = new Configuration.Builder(new ClasspathConfigurationSource(configFileName));
+        baseConfiguration = new Configuration.Builder().uri("bolt://localhost:7687").credentials("neo4j", "secret");
+        //        baseConfiguration = new Configuration.Builder(new ClasspathConfigurationSource(configFileName));
 
-        if (baseConfiguration.build().getDriverClassName().equals(HttpDriver.class.getCanonicalName())) {
-            testServer = new TestServer(true, false, 5);
-        } else if (baseConfiguration.build().getDriverClassName().equals(BoltDriver.class.getCanonicalName())) {
-            testServer = new TestServer(true, true, 5);
-        } else {
-            graphStore = createTemporaryGraphStore();
-        }
+        //        if (baseConfiguration.build().getDriverClassName().equals(HttpDriver.class.getCanonicalName())) {
+        //            testServer = new TestServer(true, false, 5);
+        //        } else if (baseConfiguration.build().getDriverClassName().equals(BoltDriver.class.getCanonicalName())) {
+        //            testServer = new TestServer(true, true, 5);
+        //        } else {
+        //            graphStore = createTemporaryGraphStore();
+        //        }
     }
 
     @BeforeClass
     public static void setupMultiDriverTestEnvironment() {
 
-        if (baseConfiguration.build().getDriverClassName().equals(EmbeddedDriver.class.getCanonicalName())) {
-            baseConfiguration.uri(graphStore.toURI().toString()).build();
-        } else {
-            baseConfiguration.uri(testServer.getUri()).credentials(testServer.getUsername(), testServer.getPassword());
-        }
+        //        if (baseConfiguration.build().getDriverClassName().equals(EmbeddedDriver.class.getCanonicalName())) {
+        //            baseConfiguration.uri(graphStore.toURI().toString()).build();
+        //        } else {
+        //            baseConfiguration.uri(testServer.getUri()).credentials(testServer.getUsername(), testServer.getPassword());
+        //        }
 
         if (driver == null) {
             Configuration configuration = getBaseConfiguration().build();

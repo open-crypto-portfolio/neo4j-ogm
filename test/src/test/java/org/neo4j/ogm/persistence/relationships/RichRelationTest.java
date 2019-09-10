@@ -24,11 +24,15 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.ogm.domain.mappings.Article;
 import org.neo4j.ogm.domain.mappings.Person;
 import org.neo4j.ogm.domain.mappings.RichRelation;
 import org.neo4j.ogm.domain.mappings.Tag;
+import org.neo4j.ogm.domain.versioned_rel.Service;
+import org.neo4j.ogm.domain.versioned_rel.Template;
+import org.neo4j.ogm.domain.versioned_rel.UsedBy;
 import org.neo4j.ogm.session.Session;
 import org.neo4j.ogm.session.SessionFactory;
 import org.neo4j.ogm.testutil.MultiDriverTestClass;
@@ -40,10 +44,46 @@ public class RichRelationTest extends MultiDriverTestClass {
 
     private Session session;
 
+    @BeforeClass
+    public static void prepareSessionFactory() {
+        // session = new SessionFactory(driver, "org.neo4j.ogm.domain.mappings").openSession();
+        sessionFactory = new SessionFactory(driver, "org.neo4j.ogm.domain.versioned_rel");
+    }
+
     @Before
     public void init() throws IOException {
-        session = new SessionFactory(driver, "org.neo4j.ogm.domain.mappings").openSession();
+        session = sessionFactory.openSession();
         session.purgeDatabase();
+    }
+
+    @Test
+    public void shit() {
+
+        final Session createSession = sessionFactory.openSession();
+
+        Service service = new Service();
+        service.setName("A service");
+
+        Template template = new Template();
+        template.setName("A template");
+
+        UsedBy usedBy = new UsedBy();
+        usedBy.setUser("A user");
+        usedBy.setService(service);
+        usedBy.setTemplate(template);
+
+        template.setService(Collections.singleton(usedBy));
+        service.setTemplate(usedBy);
+
+        createSession.save(template);
+        //createSession.clear();
+
+        final Session readSession = createSession;
+
+        Template loaded = readSession.load(Template.class, template.getUuid());
+        loaded.setName("Peng");
+        readSession.save(loaded);
+
     }
 
     /**
