@@ -49,7 +49,7 @@ import org.neo4j.test.rule.RepeatRule.Repeat;
 public class RichRelationTest extends MultiDriverTestClass {
 
     @Rule
-    public RepeatRule repeatRule = new RepeatRule(true, 1);
+    public RepeatRule repeatRule = new RepeatRule();
 
     private Session session;
 
