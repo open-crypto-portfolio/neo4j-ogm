@@ -18,37 +18,17 @@
  */
 package org.neo4j.ogm.domain.versioned_rel;
 
-import org.neo4j.ogm.annotation.EndNode;
-import org.neo4j.ogm.annotation.RelationshipEntity;
-import org.neo4j.ogm.annotation.StartNode;
+import java.util.UUID;
+
+import org.neo4j.ogm.id.IdStrategy;
 
 /**
  * @author Michael J. Simons
  */
-@RelationshipEntity(type = "special")
-public class UsedBy extends BaseDomainObject {
+public final class StringUuidStrategy implements IdStrategy {
 
-    public String user;
-
-    @StartNode
-    private Service service;
-
-    @EndNode
-    private Template template;
-
-    public String getUser() {
-        return user;
-    }
-
-    public void setUser(String user) {
-        this.user = user;
-    }
-
-    public void setService(Service service) {
-        this.service = service;
-    }
-
-    public void setTemplate(Template template) {
-        this.template = template;
+    @Override
+    public Object generateId(Object entity) {
+        return UUID.randomUUID().toString();
     }
 }
