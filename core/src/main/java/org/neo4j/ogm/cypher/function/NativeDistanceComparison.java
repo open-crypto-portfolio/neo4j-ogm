@@ -23,6 +23,10 @@ import java.util.Map;
 
 import org.neo4j.ogm.cypher.Filter;
 
+/**
+ * @author Gerrit Meier
+ * @author Michael J. Simons
+ */
 public class NativeDistanceComparison implements FilterFunction<DistanceFromNativePoint> {
 
     private static final String DISTANCE_VALUE_PARAMETER = "distanceValue";
@@ -60,7 +64,7 @@ public class NativeDistanceComparison implements FilterFunction<DistanceFromNati
         String comparisonOperator = getFilter().getComparisonOperator().getValue();
 
         return String.format(
-            "distance({%s},%s) %s {%s} ",
+            "distance($%s,%s) %s $%s ",
             OGM_POINT_PARAMETER, pointPropertyOfEntity, comparisonOperator, DISTANCE_VALUE_PARAMETER);
     }
 

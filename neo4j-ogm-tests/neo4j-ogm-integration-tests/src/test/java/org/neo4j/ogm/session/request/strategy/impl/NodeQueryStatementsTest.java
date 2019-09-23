@@ -40,6 +40,7 @@ import org.neo4j.ogm.session.request.strategy.QueryStatements;
  * @author Vince Bickers
  * @author Luanne Misquitta
  * @author Jasper Blues
+ * author Michael J. Simons
  */
 public class NodeQueryStatementsTest {
 
@@ -57,14 +58,14 @@ public class NodeQueryStatementsTest {
     @Test
     public void testFindOne() throws Exception {
         assertThat(queryStatements.findOne(0L, 2).getStatement())
-            .isEqualTo("MATCH (n) WHERE ID(n) = { id } WITH n MATCH p=(n)-[*0..2]-(m) RETURN p");
+            .isEqualTo("MATCH (n) WHERE ID(n) = $id WITH n MATCH p=(n)-[*0..2]-(m) RETURN p");
     }
 
     @Test
     public void testFindOnePrimaryIndex() throws Exception {
         PagingAndSortingQuery query = primaryQueryStatements.findOne("test-uuid", 2);
         assertThat(query.getStatement())
-            .isEqualTo("MATCH (n) WHERE n.`uuid` = { id } WITH n MATCH p=(n)-[*0..2]-(m) RETURN p");
+            .isEqualTo("MATCH (n) WHERE n.`uuid` = $id WITH n MATCH p=(n)-[*0..2]-(m) RETURN p");
         assertThat(query.getParameters()).containsEntry("id", "test-uuid");
     }
 
@@ -72,7 +73,7 @@ public class NodeQueryStatementsTest {
     public void testFindOneByType() throws Exception {
         PagingAndSortingQuery query = queryStatements.findOneByType("Orbit", 0L, 2);
         assertThat(query.getStatement())
-            .isEqualTo("MATCH (n:`Orbit`) WHERE ID(n) = { id } WITH n MATCH p=(n)-[*0..2]-(m) RETURN p");
+            .isEqualTo("MATCH (n:`Orbit`) WHERE ID(n) = $id WITH n MATCH p=(n)-[*0..2]-(m) RETURN p");
         assertThat(query.getParameters()).containsEntry("id", 0L);
 
         // Also assert that an empty label is the same as using the typeless variant
@@ -87,7 +88,7 @@ public class NodeQueryStatementsTest {
         PagingAndSortingQuery query = primaryQueryStatements.findOneByType("Orbit", "test-uuid", 2);
 
         assertThat(query.getStatement())
-            .isEqualTo("MATCH (n:`Orbit`) WHERE n.`uuid` = { id } WITH n MATCH p=(n)-[*0..2]-(m) RETURN p");
+            .isEqualTo("MATCH (n:`Orbit`) WHERE n.`uuid` = $id WITH n MATCH p=(n)-[*0..2]-(m) RETURN p");
         assertThat(query.getParameters()).containsEntry("id", "test-uuid");
     }
 
@@ -96,7 +97,7 @@ public class NodeQueryStatementsTest {
         PagingAndSortingQuery query = primaryQueryStatements.findOneByType("Orbit", "test-uuid", -1);
 
         assertThat(query.getStatement())
-            .isEqualTo("MATCH (n:`Orbit`) WHERE n.`uuid` = { id } WITH n MATCH p=(n)-[*0..]-(m) RETURN p");
+            .isEqualTo("MATCH (n:`Orbit`) WHERE n.`uuid` = $id WITH n MATCH p=(n)-[*0..]-(m) RETURN p");
         assertThat(query.getParameters()).containsEntry("id", "test-uuid");
     }
 
@@ -113,7 +114,7 @@ public class NodeQueryStatementsTest {
         String statement = queryStatements.findByType("Restaurant",
             filters, 4).getStatement();
         assertThat(statement).isEqualTo(
-            "MATCH (n:`Restaurant`) WHERE distance(point({latitude: n.latitude, longitude: n.longitude}),point({latitude:{lat}, longitude:{lon}})) = {distance} WITH n MATCH p=(n)-[*0..4]-(m) RETURN p, ID(n)");
+            "MATCH (n:`Restaurant`) WHERE distance(point({latitude: n.latitude, longitude: n.longitude}),point({latitude: $lat, longitude: $lon})) = $distance WITH n MATCH p=(n)-[*0..4]-(m) RETURN p, ID(n)");
     }
 
     @Test
@@ -133,58 +134,48 @@ public class NodeQueryStatementsTest {
             "MATCH (n:`Restaurant`) WHERE NOT(n.`score` IS NULL ) WITH n MATCH p=(n)-[*0..3]-(m) RETURN p, ID(n)");
     }
 
-    /**
-     * @throws Exception
-     * @see DATAGRAPH-707
-     */
-    @Test
-    public void testFindAllByLabel() throws Exception {
+    @Test // DATAGRAPH-707
+    public void testFindAllByLabel() {
         assertThat(queryStatements.findAllByType("Orbit", asList(1L, 2L, 3L), 0).getStatement())
-            .isEqualTo("MATCH (n:`Orbit`) WHERE ID(n) IN { ids } WITH n RETURN n");
+            .isEqualTo("MATCH (n:`Orbit`) WHERE ID(n) IN $ids WITH n RETURN n");
     }
 
     @Test
-    public void testFindAllByLabelPrimaryIndex() throws Exception {
+    public void testFindAllByLabelPrimaryIndex() {
         List<String> ids = Arrays.asList("uuid-1", "uuid-2");
         PagingAndSortingQuery query = primaryQueryStatements.findAllByType("Orbit", ids, 0);
 
         assertThat(query.getStatement())
-            .isEqualTo("MATCH (n:`Orbit`) WHERE n.`uuid` IN { ids } WITH n RETURN n");
+            .isEqualTo("MATCH (n:`Orbit`) WHERE n.`uuid` IN $ids WITH n RETURN n");
         assertThat(query.getParameters())
             .containsEntry("ids", ids);
     }
 
     @Test
-    public void testFindAllByLabelPrimaryIndexInfiniteDepth() throws Exception {
+    public void testFindAllByLabelPrimaryIndexInfiniteDepth() {
         List<String> ids = Arrays.asList("uuid-1", "uuid-2");
         PagingAndSortingQuery query = primaryQueryStatements.findAllByType("Orbit", ids, -1);
 
         assertThat(query.getStatement())
-            .isEqualTo("MATCH (n:`Orbit`) WHERE n.`uuid` IN { ids } WITH n MATCH p=(n)-[*0..]-(m) RETURN p");
+            .isEqualTo("MATCH (n:`Orbit`) WHERE n.`uuid` IN $ids WITH n MATCH p=(n)-[*0..]-(m) RETURN p");
         assertThat(query.getParameters())
             .containsEntry("ids", ids);
     }
 
-    /**
-     * @see DATAGRAPH-707
-     */
-    @Test
-    public void testFindAllByLabelDepthOne() throws Exception {
+    @Test // DATAGRAPH-707
+    public void testFindAllByLabelDepthOne() {
         assertThat(queryStatements.findAllByType("Orbit", asList(1L, 2L, 3L), 1).getStatement())
-            .isEqualTo("MATCH (n:`Orbit`) WHERE ID(n) IN { ids } WITH n MATCH p=(n)-[*0..1]-(m) RETURN p");
+            .isEqualTo("MATCH (n:`Orbit`) WHERE ID(n) IN $ids WITH n MATCH p=(n)-[*0..1]-(m) RETURN p");
     }
 
-    /**
-     * @see DATAGRAPH-707
-     */
-    @Test
-    public void testFindAllByLabelDepthInfinity() throws Exception {
+    @Test // DATAGRAPH-707
+    public void testFindAllByLabelDepthInfinity() {
         assertThat(queryStatements.findAllByType("Orbit", asList(1L, 2L, 3L), -1).getStatement())
-            .isEqualTo("MATCH (n:`Orbit`) WHERE ID(n) IN { ids } WITH n MATCH p=(n)-[*0..]-(m) RETURN p");
+            .isEqualTo("MATCH (n:`Orbit`) WHERE ID(n) IN $ids WITH n MATCH p=(n)-[*0..]-(m) RETURN p");
     }
 
     @Test
-    public void testFindByProperty() throws Exception {
+    public void testFindByProperty() {
         String statement = queryStatements.findByType("Asteroid",
             new Filters().add(new Filter("diameter", ComparisonOperator.EQUALS, 60.2)), 4).getStatement();
         assertThat(statement).isEqualTo(
@@ -192,16 +183,16 @@ public class NodeQueryStatementsTest {
     }
 
     @Test
-    public void testFindOneZeroDepth() throws Exception {
+    public void testFindOneZeroDepth() {
         assertThat(queryStatements.findOne(0L, 0).getStatement())
-            .isEqualTo("MATCH (n) WHERE ID(n) = { id } WITH n RETURN n");
+            .isEqualTo("MATCH (n) WHERE ID(n) = $id WITH n RETURN n");
     }
 
     @Test
     public void testFindOneZeroDepthPrimaryIndex() throws Exception {
         PagingAndSortingQuery query = primaryQueryStatements.findOne("test-uuid", 0);
 
-        assertThat(query.getStatement()).isEqualTo("MATCH (n) WHERE n.`uuid` = { id } WITH n RETURN n");
+        assertThat(query.getStatement()).isEqualTo("MATCH (n) WHERE n.`uuid` = $id WITH n RETURN n");
     }
 
     @Test
@@ -246,7 +237,7 @@ public class NodeQueryStatementsTest {
     @Test
     public void testFindOneInfiniteDepth() throws Exception {
         assertThat(queryStatements.findOne(0L, -1).getStatement())
-            .isEqualTo("MATCH (n) WHERE ID(n) = { id } WITH n MATCH p=(n)-[*0..]-(m) RETURN p");
+            .isEqualTo("MATCH (n) WHERE ID(n) = $id WITH n MATCH p=(n)-[*0..]-(m) RETURN p");
     }
 
     /**

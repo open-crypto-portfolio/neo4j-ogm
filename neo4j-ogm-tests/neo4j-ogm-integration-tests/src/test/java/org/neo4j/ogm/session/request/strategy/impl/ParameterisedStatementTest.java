@@ -39,6 +39,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @author Luanne Misquitta
  * @author Mark Angrish
  * @author Jasper Blues
+ * @author Michael J. Simons
  */
 public class ParameterisedStatementTest {
 
@@ -51,7 +52,7 @@ public class ParameterisedStatementTest {
     public void testFindOne() throws Exception {
         query = nodeQueryStatements.findOne(123L, 1);
         assertThat(query.getStatement())
-            .isEqualTo("MATCH (n) WHERE ID(n) = { id } WITH n MATCH p=(n)-[*0..1]-(m) RETURN p");
+            .isEqualTo("MATCH (n) WHERE ID(n) = $id WITH n MATCH p=(n)-[*0..1]-(m) RETURN p");
         assertThat(mapper.writeValueAsString(query.getParameters())).isEqualTo("{\"id\":123}");
     }
 
@@ -62,10 +63,7 @@ public class ParameterisedStatementTest {
         assertThat(mapper.writeValueAsString(query.getParameters())).isEqualTo("{}");
     }
 
-    /**
-     * @see DATAGRAPH-589
-     */
-    @Test
+    @Test // DATAGRAPH-589
     public void testFindByTypeWithIllegalCharacter() throws Exception {
         query = new RelationshipQueryStatements().findByType("HAS-ALBUM", 1);
         assertThat(query.getStatement()).isEqualTo(
@@ -130,7 +128,7 @@ public class ParameterisedStatementTest {
     public void delete() throws Exception {
         cypherQuery = new NodeDeleteStatements().delete(123L);
         assertThat(cypherQuery.getStatement())
-            .isEqualTo("MATCH (n) WHERE ID(n) = { id } OPTIONAL MATCH (n)-[r0]-() DELETE r0, n");
+            .isEqualTo("MATCH (n) WHERE ID(n) = $id OPTIONAL MATCH (n)-[r0]-() DELETE r0, n");
         assertThat(mapper.writeValueAsString(cypherQuery.getParameters())).isEqualTo("{\"id\":123}");
     }
 
@@ -139,7 +137,7 @@ public class ParameterisedStatementTest {
         List<Long> ids = Arrays.asList(new Long[] { 123L, 234L, 345L });
         cypherQuery = new NodeDeleteStatements().delete(ids);
         assertThat(cypherQuery.getStatement())
-            .isEqualTo("MATCH (n) WHERE ID(n) in { ids } OPTIONAL MATCH (n)-[r0]-() DELETE r0, n");
+            .isEqualTo("MATCH (n) WHERE ID(n) in $ids OPTIONAL MATCH (n)-[r0]-() DELETE r0, n");
         assertThat(mapper.writeValueAsString(cypherQuery.getParameters())).isEqualTo("{\"ids\":[123,234,345]}");
     }
 
@@ -157,42 +155,29 @@ public class ParameterisedStatementTest {
         assertThat(mapper.writeValueAsString(cypherQuery.getParameters())).isEqualTo("{}");
     }
 
-    /**
-     * @see DATAGRAPH-586
-     */
-    @Test
+    @Test // DATAGRAPH-586
     public void deleteRel() throws Exception {
         cypherQuery = new RelationshipDeleteStatements().delete(123L);
-        assertThat(cypherQuery.getStatement()).isEqualTo("MATCH (n)-[r0]->() WHERE ID(r0) = { id } DELETE r0");
+        assertThat(cypherQuery.getStatement()).isEqualTo("MATCH (n)-[r0]->() WHERE ID(r0) = $id DELETE r0");
         assertThat(mapper.writeValueAsString(cypherQuery.getParameters())).isEqualTo("{\"id\":123}");
     }
 
-    /**
-     * @see DATAGRAPH-586
-     */
-    @Test
+    @Test // DATAGRAPH-586
     public void deleteAllRels() throws Exception {
         List<Long> ids = Arrays.asList(new Long[] { 123L, 234L, 345L });
         cypherQuery = new RelationshipDeleteStatements().delete(ids);
-        assertThat(cypherQuery.getStatement()).isEqualTo("MATCH (n)-[r0]->() WHERE ID(r0) IN { ids } DELETE r0");
+        assertThat(cypherQuery.getStatement()).isEqualTo("MATCH (n)-[r0]->() WHERE ID(r0) IN $ids DELETE r0");
         assertThat(mapper.writeValueAsString(cypherQuery.getParameters())).isEqualTo("{\"ids\":[123,234,345]}");
     }
 
-    /**
-     * @see DATAGRAPH-586
-     */
-    @Test
+    @Test // DATAGRAPH-586
     public void deleteAllRelsByType() throws Exception {
         cypherQuery = new RelationshipDeleteStatements().delete("REL");
         assertThat(cypherQuery.getStatement()).isEqualTo("MATCH (n)-[r0:`REL`]-() DELETE r0");
         assertThat(mapper.writeValueAsString(cypherQuery.getParameters())).isEqualTo("{}");
     }
 
-    /**
-     * @throws Exception
-     * @see DATAGRAPH-631
-     */
-    @Test
+    @Test // DATAGRAPH-631
     public void testFindByPropertyWithIllegalCharacter() throws Exception {
         query = new RelationshipQueryStatements()
             .findByType("HAS-ALBUM", new Filters().add(new Filter("fake-property", ComparisonOperator.EQUALS, "none")),
