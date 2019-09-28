@@ -208,15 +208,15 @@ public class BoltDriver extends AbstractConfigurableDriver {
         String singleUri;
         if (configuration.getURI() != null) {
             singleUri = configuration.getURI();
+        } else {
+            // if no URI was provided take the first argument from the URI list
+            String[] uris = configuration.getURIS();
+            if (uris == null || configuration.getURIS().length == 0) {
+                throw new IllegalArgumentException(
+                    "You must provide either an URI or at least one URI in the URIS parameter.");
+            }
+            singleUri = configuration.getURIS()[0];
         }
-
-        // if no URI was provided take the first argument from the URI list
-        String[] uris = configuration.getURIS();
-        if (uris == null || configuration.getURIS().length == 0) {
-            throw new IllegalArgumentException(
-                "You must provide either an URI or at least one URI in the URIS parameter.");
-        }
-        singleUri = configuration.getURIS()[0];
 
         return fixProtocolIfNecessary(URI.create(singleUri));
     }
@@ -226,8 +226,8 @@ public class BoltDriver extends AbstractConfigurableDriver {
      * @param uri
      * @return
      */
-    static URI fixProtocolIfNecessary(URI uri) {
-        if("bolt+routing".equals(uri.getScheme().toLowerCase(Locale.ENGLISH))) {
+    private static URI fixProtocolIfNecessary(URI uri) {
+        if ("bolt+routing".equals(uri.getScheme().toLowerCase(Locale.ENGLISH))) {
             return URI.create(uri.toString().replaceAll("^bolt\\+routing", "neo4j"));
         }
         return uri;
