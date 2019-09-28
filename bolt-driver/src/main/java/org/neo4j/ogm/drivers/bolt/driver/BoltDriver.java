@@ -192,11 +192,11 @@ public class BoltDriver extends AbstractConfigurableDriver {
         String[] uris = configuration.getURIS();
 
         if (uri != null) {
-            mergedUris.add(URI.create(uri));
+            mergedUris.add(fixProtocolIfNecessary(URI.create(uri)));
         }
         if (uris != null) {
             for (String routingUri : uris) {
-                mergedUris.add(URI.create(routingUri));
+                mergedUris.add(fixProtocolIfNecessary(URI.create(routingUri)));
             }
         }
 
@@ -205,8 +205,9 @@ public class BoltDriver extends AbstractConfigurableDriver {
 
     private URI getSingleURI() {
 
+        String singleUri;
         if (configuration.getURI() != null) {
-            return URI.create(configuration.getURI());
+            singleUri = configuration.getURI();
         }
 
         // if no URI was provided take the first argument from the URI list
@@ -215,8 +216,21 @@ public class BoltDriver extends AbstractConfigurableDriver {
             throw new IllegalArgumentException(
                 "You must provide either an URI or at least one URI in the URIS parameter.");
         }
+        singleUri = configuration.getURIS()[0];
 
-        return URI.create(configuration.getURIS()[0]);
+        return fixProtocolIfNecessary(URI.create(singleUri));
+    }
+
+    /**
+     * Make the 4.0 driver somewhat backward compatible with older configurations
+     * @param uri
+     * @return
+     */
+    static URI fixProtocolIfNecessary(URI uri) {
+        if("bolt+routing".equals(uri.getScheme().toLowerCase(Locale.ENGLISH))) {
+            return URI.create(uri.toString().replaceAll("^bolt\\+routing", "neo4j"));
+        }
+        return uri;
     }
 
     @Override
